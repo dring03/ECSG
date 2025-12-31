@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>
+    Arousal Valence Model-based Logit Steering for Emotion-Controllable Song Generation
+  </title>
+
+  <style>
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 40px 20px;
+      line-height: 1.6;
+      color: #111;
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 32px;
+      margin-bottom: 30px;
+    }
+
+    h2 {
+      font-size: 22px;
+      margin-top: 40px;
+      border-bottom: 1px solid #ddd;
+      padding-bottom: 6px;
+    }
+
+    p {
+      font-size: 16px;
+      text-align: justify;
+    }
+
+    img {
+      display: block;
+      margin: 30px auto;
+      max-width: 100%;
+    }
+
+    .abstract {
+      background-color: #f8f8f8;
+      padding: 20px;
+      border-radius: 6px;
+    }
+  </style>
+</head>
+
+<body>
+
+<h1>
+  Arousal Valence Model-based Logit Steering for Emotion-Controllable Song Generation
+</h1>
+
+<h2>Abstract</h2>
+<div class="abstract">
+  <p>
+Emotion-controllable song generation aims to produce songs that align with given lyrics and a target emotion. Existing approaches often rely on discrete emotion labels or prompt engineering, which can result in unstable and imprecise emotional control. To address these limitations, we propose ECSG, an emotion-controllable song generation framework based on the Arousal-Valence model, which enables stable and fine-grained emotion modulation without retraining the base generator. ECSG introduces an Arousal-Valence-Guided logit steering module that adjusts the primitive logits produced by a pre-trained SongLM at inference time. At each generation step, an emotion scorer predicts the arousal–valence coordinates of top-K candidate token sequences, and their Euclidean distance from the target emotion is converted into logit adjustments that bias token sampling toward emotionally aligned candidates. Extensive objective and subjective evaluations demonstrate that ECSG significantly improves emotional controllability while preserving audio quality. 
+</div>
+
+<h2>Model Overview</h2>
+<img src="images/model.png" alt="Model architecture of ECSG">
+
+</body>
+</html>
