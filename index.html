@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>
+    Arousal Valence Model-based Logit Steering for Emotion-Controllable Song Generation
+  </title>
+
+  <style>
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 40px 20px;
+      line-height: 1.6;
+      color: #111;
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 32px;
+      margin-bottom: 30px;
+    }
+
+    h2 {
+      font-size: 22px;
+      margin-top: 40px;
+      border-bottom: 1px solid #ddd;
+      padding-bottom: 6px;
+    }
+
+    p {
+      font-size: 16px;
+      text-align: justify;
+    }
+
+    img {
+      display: block;
+      margin: 30px auto;
+      max-width: 100%;
+    }
+
+    .abstract {
+      background-color: #f8f8f8;
+      padding: 20px;
+      border-radius: 6px;
+    }
+.table-wrap { overflow-x: auto; margin-top: 12px; }
+
+.results-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 900px;
+  font-size: 14px;
+
+  /* ✅关键：固定布局，列宽就按你设置的走，不会被 audio 撑开 */
+  table-layout: fixed;
+}
+
+.results-table th, .results-table td {
+  border: 1px solid #ddd;
+  padding: 10px;
+  vertical-align: top;
+}
+
+.mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 13px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+
+/* Foldable content styles */
+.foldable-content {
+  position: relative;
+  max-height: 50px;
+  overflow: hidden;
+  transition: max-height 0.3s ease;
+}
+
+.foldable-content.expanded {
+  max-height: 500px;
+}
+
+.toggle-btn {
+  background-color: #f0f0f0;
+  border: 1px solid #ddd;
+  padding: 4px 8px;
+  font-size: 12px;
+  cursor: pointer;
+  margin-top: 8px;
+  border-radius: 4px;
+}
+
+.toggle-btn:hover {
+  background-color: #e0e0e0;
+}
+
+  
+
+
+
+
+
+/* ===== Column widths (final) =====
+   - Prevent cell text from bleeding into adjacent columns
+   - Slightly narrower Emotion, wider Lyrics/Text Description
+*/
+.results-table th, .results-table td {
+  overflow: hidden;             /* stop visual overlap */
+  overflow-wrap: anywhere;      /* wrap long tokens */
+  word-break: break-word;
+}
+
+.results-table th:nth-child(1),
+.results-table td:nth-child(1) { width: 150px; }   /* Model Name */
+
+.results-table th:nth-child(2),
+.results-table td:nth-child(2) { width: 140px; }   /* Emotion (a bit shorter) */
+
+.results-table th:nth-child(3),
+.results-table td:nth-child(3) { width: 320px; }   /* Lyrics (longer) */
+
+.results-table th:nth-child(5),
+.results-table td:nth-child(5) { width: 320px; }   /* Text Description (longer) */
+
+.results-table th:nth-child(4),
+.results-table td:nth-child(4),
+.results-table th:nth-child(6),
+.results-table td:nth-child(6) { width: 170px; }   /* Audio columns */
+
+/* Reduce empty space around players, and center them */
+.results-table td:nth-child(4),
+.results-table td:nth-child(6) { padding: 6px 8px; }
+
+.results-table td:nth-child(4) audio,
+.results-table td:nth-child(6) audio {
+  width: 140px;
+  max-width: 100%;
+  display: block;
+  margin: 0 auto;
+}
+
+</style>
+</head>
+
+<body>
+
+<h1>
+  Arousal Valence Model-based Logit Steering for Emotion-Controllable Song Generation
+</h1>
+
+<h2>Abstract</h2>
+<div class="abstract">
+  <p>
+Emotion-controllable song generation aims to produce songs that align with given lyrics and a target emotion. Existing approaches often rely on discrete emotion labels or prompt engineering, which can result in unstable and imprecise emotional control. To address these limitations, we propose ECSG, an emotion-controllable song generation framework based on the Arousal-Valence model, which enables stable and fine-grained emotion modulation without retraining the base generator. ECSG introduces an Arousal-Valence-Guided logit steering module that adjusts the primitive logits produced by a pre-trained SongLM at inference time. At each generation step, an emotion scorer predicts the arousal–valence coordinates of top-K candidate token sequences, and their Euclidean distance from the target emotion is converted into logit adjustments that bias token sampling toward emotionally aligned candidates. Extensive objective and subjective evaluations demonstrate that ECSG significantly improves emotional controllability while preserving audio quality. 
+</div>
+
+<h2>Model Overview</h2>
+<img src="images/model.png" alt="Model architecture of ECSG">
+<div class="table-wrap">
+</div>
+
+<h3>Emotion: Excited and joyful</h3>
+<div class="table-wrap">
+  <table class="results-table">
+    <thead>
+      <tr>
+        <th>Model Name</th>
+        <th>Emotion</th>
+        <th>Lyrics</th>
+        <th>Reference Audio</th>
+        <th>Text Description</th>
+        <th>Generated Audio</th>
+      </tr>
+    </thead>
+    <tbody>
+<!-- ================= (A, V) = (0.8, 0.8) ================= -->
+<tr><td>ECSG (neutral)</td><td>(A, V) = (0.8, 0.8)</td><td class="mono">Lines appear and fade away,Moments move from day to day,Sounds repeat, then slowly change,Shifting form but staying same.Steps continue, mark the ground , Patterns circle through the sound,Time unfolds without a sign,Every space aligns in line,I remain where sequences stay,Letting structures find their way </td><td><audio controls><source src="ref_audio/neutral/8_8.mp3"></audio></td><td class="mono">A song that follows a clear and continuous progression, allowing elements to evolve naturally over time</td><td><audio controls><source src="audios/ECSG(neutral)/8_8.mp3"></audio></td></tr>
+<tr><td>ECSG (emo)</td><td>(A, V) = (0.8, 0.8)</td><td class="mono">Light breaks open in the sky,Every step feels amplified,I can feel the moment rise,Heartbeats racing, voices high , Nothing holds me to the ground,I'm alive inside this sound,Every breath is shining bright,This is now, this is my time </td><td><audio controls><source src="ref_audio/8_8.mp3"></audio></td><td class="mono">Highly energetic and joyful, conveying strong excitement, enthusiasm </td><td><audio controls><source src="audios/ECSG(emo)/8_8.mp3"></audio></td></tr>
+<tr><td>LeVo (neutral)</td><td>(A, V) = (0.8, 0.8)</td><td class="mono">Lines appear and fade away,Moments move from day to day,Sounds repeat, then slowly change,Shifting form but staying same.Steps continue, mark the ground , Patterns circle through the sound,Time unfolds without a sign,Every space aligns in line,I remain where sequences stay,Letting structures find their way </td><td><audio controls><source src="ref_audio/neutral/8_8.mp3"></audio></td><td class="mono">A song that follows a clear and continuous progression, allowing elements to evolve naturally over time</td><td><audio controls><source src="audios/levo(neutral)/8_8.mp3"></audio></td></tr>
+<tr><td>LeVo (emo)</td><td>(A, V) = (0.8, 0.8)</td><td class="mono">Light breaks open in the sky,Every step feels amplified,I can feel the moment rise,Heartbeats racing, voices high , Nothing holds me to the ground,I'm alive inside this sound,Every breath is shining bright,This is now, this is my time </td><td><audio controls><source src="ref_audio/8_8.mp3"></audio></td><td class="mono">Highly energetic and joyful, conveying strong excitement, enthusiasm </td><td><audio controls><source src="audios/levo(emo)/8_8.mp3"></audio></td></tr>
+<tr><td>SongGen(emo)</td><td>(A, V) = (0.8, 0.8)</td><td class="mono">Light breaks open in the sky,Every step feels amplified,I can feel the moment rise,Heartbeats racing, voices high , Nothing holds me to the ground,I'm alive inside this sound,Every breath is shining bright,This is now, this is my time </td><td><audio controls><source src="ref_audio/8_8.mp3"></audio></td><td class="mono">Highly energetic and joyful, conveying strong excitement, enthusiasm </td><td><audio controls><source src="audios/songgen/8_8.wav"></audio></td></tr>
+<tr><td>Suno(emo)</td><td>(A, V) = (0.8, 0.8)</td><td class="mono">Light breaks open in the sky,Every step feels amplified,I can feel the moment rise,Heartbeats racing, voices high , Nothing holds me to the ground,I'm alive inside this sound,Every breath is shining bright,This is now, this is my time </td><td>N/A</td><td class="mono">Highly energetic and joyful, conveying strong excitement, enthusiasm </td><td><audio controls><source src="audios/suno/8_8.mp3"></audio></td></tr>
+    </tbody>
+  </table>
+</div>
+
+<h3>Emotion: Energetic and upbeat</h3>
+<div class="table-wrap">
+  <table class="results-table">
+    <thead>
+      <tr>
+        <th>Model Name</th>
+        <th>Emotion</th>
+        <th>Lyrics</th>
+        <th>Reference Audio</th>
+        <th>Text Description</th>
+        <th>Generated Audio</th>
+      </tr>
+    </thead>
+    <tbody>
+<!-- ================= (A, V) = (0.8, 0.5) ================= -->
+<tr><td>ECSG (neutral)</td><td>(A, V) = (0.8, 0.5)</td><td class="mono">Steps continue, then they pause,Words emerge without a cause,Spaces open, then reduce,Every part finds gentle use , Forms repeat with small delay,Turning slightly on their way,Nothing fixed and nothing lost,Change appears at little cost,I observe the steady turn,Watching patterns shift and learn </td><td><audio controls><source src="ref_audio/neutral/8_5.mp3"></audio></td><td class="mono">A song built around gradual variation, where ideas shift slightly while maintaining overall coherence </td><td><audio controls><source src="audios/ECSG(neutral)/8_5.mp3"></audio></td></tr>
+<tr><td>ECSG (emo)</td><td>(A, V) = (0.8, 0.5)</td><td class="mono">Moving forward, never still,Chasing what I haven't felt,Every second pulls me on,Like a rhythm pushing strong , No looking back, I find my way,Feet in motion, night to day,Step by step I carry through,Everything feels fresh and new </td><td><audio controls><source src="ref_audio/8_5.mp3"></audio></td><td class="mono">Energetic and upbeat, conveying liveliness, motion, and a sense of forward momentum. </td><td><audio controls><source src="audios/ECSG(emo)/8_5.mp3"></audio></td></tr>
+<tr><td>LeVo (neutral)</td><td>(A, V) = (0.8, 0.5)</td><td class="mono">Steps continue, then they pause,Words emerge without a cause,Spaces open, then reduce,Every part finds gentle use , Forms repeat with small delay,Turning slightly on their way,Nothing fixed and nothing lost,Change appears at little cost,I observe the steady turn,Watching patterns shift and learn </td><td><audio controls><source src="ref_audio/neutral/8_5.mp3"></audio></td><td class="mono">A song built around gradual variation, where ideas shift slightly while maintaining overall coherence </td><td><audio controls><source src="audios/levo(neutral)/8_5.mp3"></audio></td></tr>
+<tr><td>LeVo (emo)</td><td>(A, V) = (0.8, 0.5)</td><td class="mono">Moving forward, never still,Chasing what I haven't felt,Every second pulls me on,Like a rhythm pushing strong , No looking back, I find my way,Feet in motion, night to day,Step by step I carry through,Everything feels fresh and new </td><td><audio controls><source src="ref_audio/8_5.mp3"></audio></td><td class="mono">Energetic and upbeat, conveying liveliness, motion, and a sense of forward momentum. </td><td><audio controls><source src="audios/levo(emo)/8_5.mp3"></audio></td></tr>
+<tr><td>SongGen(emo)</td><td>(A, V) = (0.8, 0.5)</td><td class="mono">Moving forward, never still,Chasing what I haven't felt,Every second pulls me on,Like a rhythm pushing strong , No looking back, I find my way,Feet in motion, night to day,Step by step I carry through,Everything feels fresh and new </td><td><audio controls><source src="ref_audio/8_5.mp3"></audio></td><td class="mono">Energetic and upbeat, conveying liveliness, motion, and a sense of forward momentum. </td><td><audio controls><source src="audios/songgen/8_5.wav"></audio></td></tr>
+<tr><td>Suno(emo)</td><td>(A, V) = (0.8, 0.5)</td><td class="mono">Moving forward, never still,Chasing what I haven't felt,Every second pulls me on,Like a rhythm pushing strong , No looking back, I find my way,Feet in motion, night to day,Step by step I carry through,Everything feels fresh and new </td><td>N/A</td><td class="mono">Energetic and upbeat, conveying liveliness, motion, and a sense of forward momentum. </td><td><audio controls><source src="audios/suno/8_5.mp3"></audio></td></tr>
+    </tbody>
+  </table>
+</div>
+
+<h3>Emotion: Angry and Tense</h3>
+<div class="table-wrap">
+  <table class="results-table">
+    <thead>
+      <tr>
+        <th>Model Name</th>
+        <th>Emotion</th>
+        <th>Lyrics</th>
+        <th>Reference Audio</th>
+        <th>Text Description</th>
+        <th>Generated Audio</th>
+      </tr>
+    </thead>
+    <tbody>
+<!-- ================= (A, V) = (0.8, 0.2) ================= -->
+<tr><td>ECSG (neutral)</td><td>(A, V) = (0.8, 0.2)</td><td class="mono">Single tones emerge and fade,Briefly cross, then separate,Forms combine, then drift apart,Each one marks a moving part , Nothing stays for long in view,Still the pattern carries through,Units pass from near to far,Leaving traces where they are,I remain within the span,Watching pieces form a plan </td><td><audio controls><source src="ref_audio/neutral/8_2.mp3"></audio></td><td class="mono">A song composed of simple units that appear, overlap briefly, and then move on</td><td><audio controls><source src="audios/ECSG(neutral)/8_2.mp3"></audio></td></tr>
+<tr><td>ECSG (emo)</td><td>(A, V) = (0.8, 0.2)</td><td class="mono">Pressure building in my chest,Every breath becomes a test,Words I swallow, teeth held tight,Fighting echoes in my mind , I feel heat beneath my skin,Holding storms I keep within,No release, no turning back,Every moment feels attacked </td><td><audio controls><source src="ref_audio/8_2.mp3"></audio></td><td class="mono">Intense and emotionally tense, conveying urgency, agitation, and restrained anger</td><td><audio controls><source src="audios/ECSG(emo)/8_2.mp3"></audio></td></tr>
+<tr><td>LeVo (neutral)</td><td>(A, V) = (0.8, 0.2)</td><td class="mono">Single tones emerge and fade,Briefly cross, then separate,Forms combine, then drift apart,Each one marks a moving part , Nothing stays for long in view,Still the pattern carries through,Units pass from near to far,Leaving traces where they are,I remain within the span,Watching pieces form a plan </td><td><audio controls><source src="ref_audio/neutral/8_2.mp3"></audio></td><td class="mono">A song composed of simple units that appear, overlap briefly, and then move on</td><td><audio controls><source src="audios/levo(neutral)/8_2.mp3"></audio></td></tr>
+<tr><td>LeVo (emo)</td><td>(A, V) = (0.8, 0.2)</td><td class="mono">Pressure building in my chest,Every breath becomes a test,Words I swallow, teeth held tight,Fighting echoes in my mind , I feel heat beneath my skin,Holding storms I keep within,No release, no turning back,Every moment feels attacked </td><td><audio controls><source src="ref_audio/8_2.mp3"></audio></td><td class="mono">Intense and emotionally tense, conveying urgency, agitation, and restrained anger</td><td><audio controls><source src="audios/levo(emo)/8_2.mp3"></audio></td></tr>
+<tr><td>SongGen(emo)</td><td>(A, V) = (0.8, 0.2)</td><td class="mono">Pressure building in my chest,Every breath becomes a test,Words I swallow, teeth held tight,Fighting echoes in my mind , I feel heat beneath my skin,Holding storms I keep within,No release, no turning back,Every moment feels attacked </td><td><audio controls><source src="ref_audio/8_2.mp3"></audio></td><td class="mono">Intense and emotionally tense, conveying urgency, agitation, and restrained anger</td><td><audio controls><source src="audios/songgen/8_2.wav"></audio></td></tr>
+<tr><td>Suno(emo)</td><td>(A, V) = (0.8, 0.2)</td><td class="mono">Pressure building in my chest,Every breath becomes a test,Words I swallow, teeth held tight,Fighting echoes in my mind , I feel heat beneath my skin,Holding storms I keep within,No release, no turning back,Every moment feels attacked </td><td>N/A</td><td class="mono">Intense and emotionally tense, conveying urgency, agitation, and restrained anger</td><td><audio controls><source src="audios/suno/8_5.mp3"></audio></td></tr>
+    </tbody>
+  </table>
+</div>
+
+<h3>Emotion: Pleasant and happy</h3>
+<div class="table-wrap">
+  <table class="results-table">
+    <thead>
+      <tr>
+        <th>Model Name</th>
+        <th>Emotion</th>
+        <th>Lyrics</th>
+        <th>Reference Audio</th>
+        <th>Text Description</th>
+        <th>Generated Audio</th>
+      </tr>
+    </thead>
+    <tbody>
+<!-- ================= (A, V) = (0.5, 0.8) ================= -->
+<tr><td>ECSG (neutral)</td><td>(A, V) = (0.5, 0.8)</td><td class="mono">Time moves forward, time returns,Simple cycles, simple terms,Sections meet and separate,Holding form at measured rate , Sounds align, then drift apart,Each return restarts the part,Boundaries dissolve in place,One more loop, familiar space,I remain inside the frame,Every pass repeats the same </td><td><audio controls><source src="ref_audio/neutral/5_8.mp3"></audio></td><td class="mono">A song structured with repeating sections and subtle transitions between them </td><td><audio controls><source src="audios/ECSG(neutral)/5_8.mp3"></audio></td></tr>
+<tr><td>ECSG (emo)</td><td>(A, V) = (0.5, 0.8)</td><td class="mono">Soft light rests upon my face,Time slows down, a gentle pace,Every worry fades away,Nothing more I need to say , Smiles come without a sound,Simple joys are all around,In this moment, warm and clear,Everything feels close and near </td><td><audio controls><source src="ref_audio/5_8.mp3"></audio></td><td class="mono">Pleasant and happy, conveying warmth, positivity, and smooth emotional expression </td><td><audio controls><source src="audios/ECSG(emo)/5_8.mp3"></audio></td></tr>
+<tr><td>LeVo (neutral)</td><td>(A, V) = (0.5, 0.8)</td><td class="mono">Time moves forward, time returns,Simple cycles, simple terms,Sections meet and separate,Holding form at measured rate , Sounds align, then drift apart,Each return restarts the part,Boundaries dissolve in place,One more loop, familiar space,I remain inside the frame,Every pass repeats the same </td><td><audio controls><source src="ref_audio/neutral/5_8.mp3"></audio></td><td class="mono">A song structured with repeating sections and subtle transitions between them </td><td><audio controls><source src="audios/levo(neutral)/5_8.mp3"></audio></td></tr>
+<tr><td>LeVo (emo)</td><td>(A, V) = (0.5, 0.8)</td><td class="mono">Soft light rests upon my face,Time slows down, a gentle pace,Every worry fades away,Nothing more I need to say , Smiles come without a sound,Simple joys are all around,In this moment, warm and clear,Everything feels close and near </td><td><audio controls><source src="ref_audio/5_8.mp3"></audio></td><td class="mono">Pleasant and happy, conveying warmth, positivity, and smooth emotional expression </td><td><audio controls><source src="audios/levo(emo)/5_8.mp3"></audio></td></tr>
+<tr><td>SongGen(emo)</td><td>(A, V) = (0.5, 0.8)</td><td class="mono">Soft light rests upon my face,Time slows down, a gentle pace,Every worry fades away,Nothing more I need to say , Smiles come without a sound,Simple joys are all around,In this moment, warm and clear,Everything feels close and near </td><td><audio controls><source src="ref_audio/5_8.mp3"></audio></td><td class="mono">Pleasant and happy, conveying warmth, positivity, and smooth emotional expression </td><td><audio controls><source src="audios/songgen/5_8.wav"></audio></td></tr>
+<tr><td>Suno(emo)</td><td>(A, V) = (0.5, 0.8)</td><td class="mono">Soft light rests upon my face,Time slows down, a gentle pace,Every worry fades away,Nothing more I need to say , Smiles come without a sound,Simple joys are all around,In this moment, warm and clear,Everything feels close and near </td><td>N/A</td><td class="mono">Pleasant and happy, conveying warmth, positivity, and smooth emotional expression </td><td><audio controls><source src="audios/suno/5_8.mp3"></audio></td></tr>
+    </tbody>
+  </table>
+</div>
+
+<h3>Emotion: Emotionally balanced and stable</h3>
+<div class="table-wrap">
+  <table class="results-table">
+    <thead>
+      <tr>
+        <th>Model Name</th>
+        <th>Emotion</th>
+        <th>Lyrics</th>
+        <th>Reference Audio</th>
+        <th>Text Description</th>
+        <th>Generated Audio</th>
+      </tr>
+    </thead>
+    <tbody>
+<!-- ================= (A, V) = (0.5, 0.5) ================= -->
+<tr><td>ECSG (neutral)</td><td>(A, V) = (0.5, 0.5)</td><td class="mono">Morning shifts to afternoon,Segments join without a cue,Every phrase extends the line,Linking form with measured time , Nothing breaks the ordered chain,Each return explains the same,Sound proceeds from start to end,Every part begins to blend,I move forward, phrase by phrase,Tracing paths the structure lays </td><td><audio controls><source src="ref_audio/neutral/5_5.mp3"></audio></td><td class="mono">A song that unfolds through a sequence of connected phrases, forming a consistent overall structure</td><td><audio controls><source src="audios/ECSG(neutral)/5_5.mp3"></audio></td></tr>
+<tr><td>ECSG (emo)</td><td>(A, V) = (0.5, 0.5)</td><td class="mono">Days unfold in quiet lines,Moments pass without a sign,Nothing pulls me up or down,Just the world, just being around , I move forward, calm and slow,Letting thoughts just come and go,No extremes to color through,Only now, only true </td><td><audio controls><source src="ref_audio/5_5.mp3"></audio></td><td class="mono">Emotionally balanced and stable, without strong excitement or sadness</td><td><audio controls><source src="audios/ECSG(emo)/5_5.mp3"></audio></td></tr>
+<tr><td>LeVo (neutral)</td><td>(A, V) = (0.5, 0.5)</td><td class="mono">Morning shifts to afternoon,Segments join without a cue,Every phrase extends the line,Linking form with measured time , Nothing breaks the ordered chain,Each return explains the same,Sound proceeds from start to end,Every part begins to blend,I move forward, phrase by phrase,Tracing paths the structure lays </td><td><audio controls><source src="ref_audio/neutral/5_5.mp3"></audio></td><td class="mono">A song that unfolds through a sequence of connected phrases, forming a consistent overall structure</td><td><audio controls><source src="audios/levo(neutral)/5_5.mp3"></audio></td></tr>
+<tr><td>LeVo (emo)</td><td>(A, V) = (0.5, 0.5)</td><td class="mono">Days unfold in quiet lines,Moments pass without a sign,Nothing pulls me up or down,Just the world, just being around , I move forward, calm and slow,Letting thoughts just come and go,No extremes to color through,Only now, only true </td><td><audio controls><source src="ref_audio/5_5.mp3"></audio></td><td class="mono">Emotionally balanced and stable, without strong excitement or sadness</td><td><audio controls><source src="audios/levo(emo)/5_5.mp3"></audio></td></tr>
+<tr><td>SongGen(emo)</td><td>(A, V) = (0.5, 0.5)</td><td class="mono">Days unfold in quiet lines,Moments pass without a sign,Nothing pulls me up or down,Just the world, just being around , I move forward, calm and slow,Letting thoughts just come and go,No extremes to color through,Only now, only true </td><td><audio controls><source src="ref_audio/5_5.mp3"></audio></td><td class="mono">Emotionally balanced and stable, without strong excitement or sadness</td><td><audio controls><source src="audios/songgen/5_5.wav"></audio></td></tr>
+<tr><td>Suno(emo)</td><td>(A, V) = (0.5, 0.5)</td><td class="mono">Days unfold in quiet lines,Moments pass without a sign,Nothing pulls me up or down,Just the world, just being around , I move forward, calm and slow,Letting thoughts just come and go,No extremes to color through,Only now, only true </td><td>N/A</td><td class="mono">Emotionally balanced and stable, without strong excitement or sadness</td><td><audio controls><source src="audios/suno/5_5.mp3"></audio></td></tr>
+    </tbody>
+  </table>
+</div>
+
+<h3>Emotion: Sad and Downbeat</h3>
+<div class="table-wrap">
+  <table class="results-table">
+    <thead>
+      <tr>
+        <th>Model Name</th>
+        <th>Emotion</th>
+        <th>Lyrics</th>
+        <th>Reference Audio</th>
+        <th>Text Description</th>
+        <th>Generated Audio</th>
+      </tr>
+    </thead>
+    <tbody>
+<!-- ================= (A, V) = (0.5, 0.2) ================= -->
+<tr><td>ECSG (neutral)</td><td>(A, V) = (0.5, 0.2)</td><td class="mono">Letters form a steady row,Measured space and constant flow,Every sound takes equal share,Placed within a common square , Moments pass at equal pace,Nothing shifts its given place,Lines extend, then settle down,No sharp edge and no profound,I remain within the span,Where each part is simply planned </td><td><audio controls><source src="ref_audio/neutral/5_2.mp3"></audio></td><td class="mono">A song guided by balance and regularity, with evenly distributed sections and smooth continuity</td><td><audio controls><source src="audios/ECSG(neutral)/5_2.mp3"></audio></td></tr>
+<tr><td>ECSG (emo)</td><td>(A, V) = (0.5, 0.2)</td><td class="mono">Shadows stretch across the floor,I feel tired, wanting more,Every step feels hard to take,Every smile begins to break , Words fall softly, heavy sound,Hope feels lost but still around,I keep moving through the gray,Waiting for a lighter day </td><td><audio controls><source src="ref_audio/5_2.mp3"></audio></td><td class="mono">Sad and downbeat, conveying emotional heaviness with moderate intensity</td><td><audio controls><source src="audios/ECSG(emo)/5_2.mp3"></audio></td></tr>
+<tr><td>LeVo (neutral)</td><td>(A, V) = (0.5, 0.2)</td><td class="mono">Letters form a steady row,Measured space and constant flow,Every sound takes equal share,Placed within a common square , Moments pass at equal pace,Nothing shifts its given place,Lines extend, then settle down,No sharp edge and no profound,I remain within the span,Where each part is simply planned </td><td><audio controls><source src="ref_audio/neutral/5_2.mp3"></audio></td><td class="mono">A song guided by balance and regularity, with evenly distributed sections and smooth continuity</td><td><audio controls><source src="audios/levo(neutral)/5_2.mp3"></audio></td></tr>
+<tr><td>LeVo (emo)</td><td>(A, V) = (0.5, 0.2)</td><td class="mono">Shadows stretch across the floor,I feel tired, wanting more,Every step feels hard to take,Every smile begins to break , Words fall softly, heavy sound,Hope feels lost but still around,I keep moving through the gray,Waiting for a lighter day </td><td><audio controls><source src="ref_audio/5_2.mp3"></audio></td><td class="mono">Sad and downbeat, conveying emotional heaviness with moderate intensity</td><td><audio controls><source src="audios/levo(emo)/5_2.mp3"></audio></td></tr>
+<tr><td>SongGen(emo)</td><td>(A, V) = (0.5, 0.2)</td><td class="mono">Shadows stretch across the floor,I feel tired, wanting more,Every step feels hard to take,Every smile begins to break , Words fall softly, heavy sound,Hope feels lost but still around,I keep moving through the gray,Waiting for a lighter day </td><td><audio controls><source src="ref_audio/5_2.mp3"></audio></td><td class="mono">Sad and downbeat, conveying emotional heaviness with moderate intensity</td><td><audio controls><source src="audios/songgen/5_2.wav"></audio></td></tr>
+<tr><td>Suno(emo)</td><td>(A, V) = (0.5, 0.2)</td><td class="mono">Shadows stretch across the floor,I feel tired, wanting more,Every step feels hard to take,Every smile begins to break , Words fall softly, heavy sound,Hope feels lost but still around,I keep moving through the gray,Waiting for a lighter day </td><td>N/A</td><td class="mono">Sad and downbeat, conveying emotional heaviness with moderate intensity</td><td><audio controls><source src="audios/suno/5_2.mp3"></audio></td></tr>
+    </tbody>
+  </table>
+</div>
+
+<h3>Emotion: Relaxed and Content</h3>
+<div class="table-wrap">
+  <table class="results-table">
+    <thead>
+      <tr>
+        <th>Model Name</th>
+        <th>Emotion</th>
+        <th>Lyrics</th>
+        <th>Reference Audio</th>
+        <th>Text Description</th>
+        <th>Generated Audio</th>
+      </tr>
+    </thead>
+    <tbody>
+<!-- ================= (A, V) = (0.2, 0.8) ================= -->
+<tr><td>ECSG (neutral)</td><td>(A, V) = (0.2, 0.8)</td><td class="mono">Sequences begin and close,Every step from what it knows,Parts align from first to last,Future shaped by what has passed , Nothing breaks the forward trace,Every shift maintains its place,Motion carries line by line,From the start to final sign,I stay present as it flows,Following where structure goes </td><td><audio controls><source src="ref_audio/neutral/2_8.mp3"></audio></td><td class="mono">A song defined by ordered progression, where each part follows naturally from the previous one</td><td><audio controls><source src="audios/ECSG(neutral)/2_8.mp3"></audio></td></tr>
+<tr><td>ECSG (emo)</td><td>(A, V) = (0.2, 0.8)</td><td class="mono">Gentle air and open space,Time drifts by at its own pace,Nothing rushes, nothing calls,I let go of rise and fall , Breathing in, I start to see,Everything just lets me be,In this calm I softly stay,Letting all the noise fade away </td><td><audio controls><source src="ref_audio/2_8.mp3"></audio></td><td class="mono">Relaxed and content, conveying calm positivity and gentle emotional expression</td><td><audio controls><source src="audios/ECSG(emo)/2_8.mp3"></audio></td></tr>
+<tr><td>LeVo (neutral)</td><td>(A, V) = (0.2, 0.8)</td><td class="mono">Sequences begin and close,Every step from what it knows,Parts align from first to last,Future shaped by what has passed , Nothing breaks the forward trace,Every shift maintains its place,Motion carries line by line,From the start to final sign,I stay present as it flows,Following where structure goes </td><td><audio controls><source src="ref_audio/neutral/2_8.mp3"></audio></td><td class="mono">A song defined by ordered progression, where each part follows naturally from the previous one</td><td><audio controls><source src="audios/levo(neutral)/2_8.mp3"></audio></td></tr>
+<tr><td>LeVo (emo)</td><td>(A, V) = (0.2, 0.8)</td><td class="mono">Gentle air and open space,Time drifts by at its own pace,Nothing rushes, nothing calls,I let go of rise and fall , Breathing in, I start to see,Everything just lets me be,In this calm I softly stay,Letting all the noise fade away </td><td><audio controls><source src="ref_audio/2_8.mp3"></audio></td><td class="mono">Relaxed and content, conveying calm positivity and gentle emotional expression</td><td><audio controls><source src="audios/levo(emo)/2_8.mp3"></audio></td></tr>
+<tr><td>SongGen(emo)</td><td>(A, V) = (0.2, 0.8)</td><td class="mono">Gentle air and open space,Time drifts by at its own pace,Nothing rushes, nothing calls,I let go of rise and fall , Breathing in, I start to see,Everything just lets me be,In this calm I softly stay,Letting all the noise fade away </td><td><audio controls><source src="ref_audio/2_8.mp3"></audio></td><td class="mono">Relaxed and content, conveying calm positivity and gentle emotional expression</td><td><audio controls><source src="audios/songgen/2_8.wav"></audio></td></tr>
+<tr><td>Suno(emo)</td><td>(A, V) = (0.2, 0.8)</td><td class="mono">Gentle air and open space,Time drifts by at its own pace,Nothing rushes, nothing calls,I let go of rise and fall , Breathing in, I start to see,Everything just lets me be,In this calm I softly stay,Letting all the noise fade away </td><td>N/A</td><td class="mono">Relaxed and content, conveying calm positivity and gentle emotional expression</td><td><audio controls><source src="audios/suno/2_8.mp3"></audio></td></tr>
+    </tbody>
+  </table>
+</div>
+
+<h3>Emotion: Calm</h3>
+<div class="table-wrap">
+  <table class="results-table">
+    <thead>
+      <tr>
+        <th>Model Name</th>
+        <th>Emotion</th>
+        <th>Lyrics</th>
+        <th>Reference Audio</th>
+        <th>Text Description</th>
+        <th>Generated Audio</th>
+      </tr>
+    </thead>
+    <tbody>
+<!-- ================= (A, V) = (0.2, 0.5) ================= -->
+<tr><td>ECSG (neutral)</td><td>(A, V) = (0.2, 0.5)</td><td class="mono">Steps align with passing beats,Echoes loop in soft repeats,Every figure stays in view,Little alters, little new.Cycles turn without demand , Holding shape as first designed,Nothing added, nothing gone,Motion steady, moving on,I stay here as frames persist,Each one closely matches this </td><td><audio controls><source src="ref_audio/neutral/2_5.mp3"></audio></td><td class="mono">A song emphasizing consistency, where elements change minimally across time</td><td><audio controls><source src="audios/ECSG(neutral)/2_5.mp3"></audio></td></tr>
+<tr><td>ECSG (emo)</td><td>(A, V) = (0.2, 0.5)</td><td class="mono">Stillness settles in my mind,Thoughts move slowly, undefined,No strong feeling pulls me through,Nothing urgent left to do , I remain in quiet tone,Comfortable with being alone,Moments pass without a sound,Peace is all that I have found </td><td><audio controls><source src="ref_audio/2_5.mp3"></audio></td><td class="mono">Calm and emotionally steady, with minimal emotional fluctuation</td><td><audio controls><source src="audios/ECSG(emo)/2_5.mp3"></audio></td></tr>
+<tr><td>LeVo (neutral)</td><td>(A, V) = (0.2, 0.5)</td><td class="mono">Steps align with passing beats,Echoes loop in soft repeats,Every figure stays in view,Little alters, little new.Cycles turn without demand , Holding shape as first designed,Nothing added, nothing gone,Motion steady, moving on,I stay here as frames persist,Each one closely matches this </td><td><audio controls><source src="ref_audio/neutral/2_5.mp3"></audio></td><td class="mono">A song emphasizing consistency, where elements change minimally across time</td><td><audio controls><source src="audios/levo(neutral)/2_5.mp3"></audio></td></tr>
+<tr><td>LeVo (emo)</td><td>(A, V) = (0.2, 0.5)</td><td class="mono">Stillness settles in my mind,Thoughts move slowly, undefined,No strong feeling pulls me through,Nothing urgent left to do , I remain in quiet tone,Comfortable with being alone,Moments pass without a sound,Peace is all that I have found </td><td><audio controls><source src="ref_audio/2_5.mp3"></audio></td><td class="mono">Calm and emotionally steady, with minimal emotional fluctuation</td><td><audio controls><source src="audios/levo(emo)/2_5.mp3"></audio></td></tr>
+<tr><td>SongGen(emo)</td><td>(A, V) = (0.2, 0.5)</td><td class="mono">Stillness settles in my mind,Thoughts move slowly, undefined,No strong feeling pulls me through,Nothing urgent left to do , I remain in quiet tone,Comfortable with being alone,Moments pass without a sound,Peace is all that I have found </td><td><audio controls><source src="ref_audio/2_5.mp3"></audio></td><td class="mono">Calm and emotionally steady, with minimal emotional fluctuation</td><td><audio controls><source src="audios/songgen/2_5.wav"></audio></td></tr>
+<tr><td>Suno(emo)</td><td>(A, V) = (0.2, 0.5)</td><td class="mono">Stillness settles in my mind,Thoughts move slowly, undefined,No strong feeling pulls me through,Nothing urgent left to do , I remain in quiet tone,Comfortable with being alone,Moments pass without a sound,Peace is all that I have found </td><td>N/A</td><td class="mono">Calm and emotionally steady, with minimal emotional fluctuation</td><td><audio controls><source src="audios/suno/2_5.mp3"></audio></td></tr>
+    </tbody>
+  </table>
+</div>
+
+<h3>Emotion: Melancholy and Depressed</h3>
+<div class="table-wrap">
+  <table class="results-table">
+    <thead>
+      <tr>
+        <th>Model Name</th>
+        <th>Emotion</th>
+        <th>Lyrics</th>
+        <th>Reference Audio</th>
+        <th>Text Description</th>
+        <th>Generated Audio</th>
+      </tr>
+    </thead>
+    <tbody>
+<!-- ================= (A, V) = (0.2, 0.2) ================= -->
+<tr><td>ECSG (neutral)</td><td>(A, V) = (0.2, 0.2)</td><td class="mono">Moments stretch, then reconvene,Intervals remain between,Every sound arrives on time,Placed along a measured line , No delay and no advance,Each event repeats its chance,Order holds from start to close,Nothing rushes, nothing slows,I observe the sequence play,As spacing shapes the way </td><td><audio controls><source src="ref_audio/neutral/2_2.mp3"></audio></td><td class="mono">A song organized around steady pacing and evenly spaced events</td><td><audio controls><source src="audios/ECSG(neutral)/2_2.mp3"></audio></td></tr>
+<tr><td>ECSG (emo)</td><td>(A, V) = (0.2, 0.2)</td><td class="mono">Morning comes but feels the same,Every day without a name,I move slowly, feeling small,Like I'm fading from it all , Silence weighs upon my chest,Even rest won't let me rest,I stay here, withdrawn and low,Letting time just pass me slow </td><td><audio controls><source src="ref_audio/2_2.mp3"></audio></td><td class="mono">Depressed and melancholic, conveying low energy and emotional withdrawal</td><td><audio controls><source src="audios/ECSG(emo)/2_2.mp3"></audio></td></tr>
+<tr><td>LeVo (neutral)</td><td>(A, V) = (0.2, 0.2)</td><td class="mono">Moments stretch, then reconvene,Intervals remain between,Every sound arrives on time,Placed along a measured line , No delay and no advance,Each event repeats its chance,Order holds from start to close,Nothing rushes, nothing slows,I observe the sequence play,As spacing shapes the way </td><td><audio controls><source src="ref_audio/neutral/2_2.mp3"></audio></td><td class="mono">A song organized around steady pacing and evenly spaced events</td><td><audio controls><source src="audios/levo(neutral)/2_2.mp3"></audio></td></tr>
+<tr><td>LeVo (emo)</td><td>(A, V) = (0.2, 0.2)</td><td class="mono">Morning comes but feels the same,Every day without a name,I move slowly, feeling small,Like I'm fading from it all , Silence weighs upon my chest,Even rest won't let me rest,I stay here, withdrawn and low,Letting time just pass me slow </td><td><audio controls><source src="ref_audio/2_2.mp3"></audio></td><td class="mono">Depressed and melancholic, conveying low energy and emotional withdrawal</td><td><audio controls><source src="audios/levo(emo)/2_2.mp3"></audio></td></tr>
+<tr><td>SongGen(emo)</td><td>(A, V) = (0.2, 0.2)</td><td class="mono">Morning comes but feels the same,Every day without a name,I move slowly, feeling small,Like I'm fading from it all , Silence weighs upon my chest,Even rest won't let me rest,I stay here, withdrawn and low,Letting time just pass me slow </td><td><audio controls><source src="ref_audio/2_2.mp3"></audio></td><td class="mono">Depressed and melancholic, conveying low energy and emotional withdrawal</td><td><audio controls><source src="audios/songgen/2_2.wav"></audio></td></tr>
+<tr><td>Suno(emo)</td><td>(A, V) = (0.2, 0.2)</td><td class="mono">Morning comes but feels the same,Every day without a name,I move slowly, feeling small,Like I'm fading from it all , Silence weighs upon my chest,Even rest won't let me rest,I stay here, withdrawn and low,Letting time just pass me slow </td><td>N/A</td><td class="mono">Depressed and melancholic, conveying low energy and emotional withdrawal</td><td><audio controls><source src="audios/suno/2_2.mp3"></audio></td></tr>
+
+</tbody>
+  </table>
+</div>
+
+<script>
+// Function to toggle foldable content
+function toggleContent(element) {
+  const content = element.previousElementSibling;
+  content.classList.toggle('expanded');
+  
+  if (content.classList.contains('expanded')) {
+    element.textContent = 'Show less';
+  } else {
+    element.textContent = 'Show more';
+  }
+}
+
+// Add toggle buttons to all mono cells containing long text
+document.addEventListener('DOMContentLoaded', function() {
+  const monoCells = document.querySelectorAll('.mono');
+  
+  monoCells.forEach(cell => {
+    const textContent = cell.textContent;
+    if (textContent.length > 100) {
+      // Wrap the content in a foldable div
+      const foldableDiv = document.createElement('div');
+      foldableDiv.className = 'foldable-content';
+      foldableDiv.innerHTML = cell.innerHTML;
+      
+      // Create toggle button
+      const toggleBtn = document.createElement('button');
+      toggleBtn.className = 'toggle-btn';
+      toggleBtn.textContent = 'Show more';
+      toggleBtn.onclick = function() {
+        toggleContent(this);
+      };
+      
+      // Clear current content and add new structure
+      cell.innerHTML = '';
+      cell.appendChild(foldableDiv);
+      cell.appendChild(toggleBtn);
+    }
+  });
+});
+</script>
+
+</body>
+</html>
