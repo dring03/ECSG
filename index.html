@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>
+    Arousal Valence Model-based Logit Steering for Emotion-Controllable Song Generation
+  </title>
+<style>
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 40px 20px;
+      line-height: 1.6;
+      color: #111;
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 32px;
+      margin-bottom: 30px;
+    }
+
+    h2 {
+      font-size: 22px;
+      margin-top: 40px;
+      border-bottom: 1px solid #ddd;
+      padding-bottom: 6px;
+    }
+
+    p {
+      font-size: 16px;
+      text-align: justify;
+    }
+
+    img {
+      display: block;
+      margin: 30px auto;
+      max-width: 100%;
+    }
+
+    .abstract {
+      background-color: #f8f8f8;
+      padding: 20px;
+      border-radius: 6px;
+    }
+.table-wrap { overflow-x: auto; margin-top: 12px; }
+
+.results-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 900px;
+  font-size: 14px;
+
+  /* ✅关键：固定布局，列宽就按你设置的走，不会被 audio 撑开 */
+  table-layout: fixed;
+}
+
+.results-table th, .results-table td {
+  border: 1px solid #ddd;
+  padding: 10px;
+  vertical-align: top;
+}
+
+.mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 13px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+
+/* Foldable content styles */
+.foldable-content {
+  position: relative;
+  max-height: 50px;
+  overflow: hidden;
+  transition: max-height 0.3s ease;
+}
+
+.foldable-content.expanded {
+  max-height: 500px;
+}
+
+.toggle-btn {
+  background-color: #f0f0f0;
+  border: 1px solid #ddd;
+  padding: 4px 8px;
+  font-size: 12px;
+  cursor: pointer;
+  margin-top: 8px;
+  border-radius: 4px;
+}
+
+.toggle-btn:hover {
+  background-color: #e0e0e0;
+}
+
+  
+
+
+
+
+
+/* ===== Column widths (final) =====
+   - Prevent cell text from bleeding into adjacent columns
+   - Slightly narrower Emotion, wider Lyrics/Text Description
+*/
+.results-table th, .results-table td {
+  overflow: hidden;             /* stop visual overlap */
+  overflow-wrap: anywhere;      /* wrap long tokens */
+  word-break: break-word;
+}
+
+.results-table th:nth-child(1),
+.results-table td:nth-child(1) { width: 150px; }   /* Model Name */
+
+.results-table th:nth-child(2),
+.results-table td:nth-child(2) { width: 140px; }   /* Emotion (a bit shorter) */
+
+.results-table th:nth-child(3),
+.results-table td:nth-child(3) { width: 320px; }   /* Lyrics (longer) */
+
+.results-table th:nth-child(5),
+.results-table td:nth-child(5) { width: 320px; }   /* Text Description (longer) */
+
+.results-table th:nth-child(4),
+.results-table td:nth-child(4),
+.results-table th:nth-child(6),
+.results-table td:nth-child(6) { width: 170px; }   /* Audio columns */
+
+/* Reduce empty space around players, and center them */
+.results-table td:nth-child(4),
+.results-table td:nth-child(6) { padding: 6px 8px; }
+
+.results-table td:nth-child(4) audio,
+.results-table td:nth-child(6) audio {
+  width: 140px;
+  max-width: 100%;
+  display: block;
+  margin: 0 auto;
+}
+
+
+
+/* ===== Revised table layout: Dataset + shared inputs + per-model audio columns ===== */
+
+.results-table { min-width: 1100px; }
+
+.av-note{
+  font-size: 13px;
+  color:#444;
+  margin: 8px 0 6px;
+}
+
+.dataset-pill{
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .4px;
+}
+
+.dataset-pill.emo{ color:#8a1f1f; }
+.dataset-pill.neutral{ color:#1f3b8a; }
+
+/* Column widths for 9-col layout (without Dataset) */
+.results-table th:nth-child(1),
+.results-table td:nth-child(1) { width: 320px; }   /* Lyrics */
+
+.results-table th:nth-child(2),
+.results-table td:nth-child(2) { width: 170px; }   /* Reference Audio */
+
+.results-table th:nth-child(3),
+.results-table td:nth-child(3) { width: 320px; }   /* Text Description */
+
+/* Model audio columns */
+.results-table th:nth-child(4),
+.results-table td:nth-child(4),
+.results-table th:nth-child(5),
+.results-table td:nth-child(5),
+.results-table th:nth-child(6),
+.results-table td:nth-child(6),
+.results-table th:nth-child(7),
+.results-table td:nth-child(7),
+.results-table th:nth-child(8),
+.results-table td:nth-child(8),
+.results-table th:nth-child(9),
+.results-table td:nth-child(9) { width: 150px; }
+
+/* Audio sizing for all audio columns */
+.results-table td audio { width: 135px; max-width: 100%; display:block; margin: 0 auto; }
+
+/* ===== Comparison table (vocal/bgm baselines) ===== */
+.compare-wrap { overflow-x:auto; margin-top: 12px; }
+.compare-table{
+  width:100%;
+  border-collapse:collapse;
+  table-layout:fixed;
+  min-width: 900px;
+  font-size:14px;
+}
+.compare-table th, .compare-table td{
+  border:1px solid #ddd;
+  padding:10px;
+  vertical-align:top;
+  overflow:hidden;
+  overflow-wrap:anywhere;
+  word-break:break-word;
+}
+.compare-table thead th{
+  background:#fafafa;
+  font-weight:600;
+  text-align:center;
+}
+.compare-table th:nth-child(1), .compare-table td:nth-child(1){ width: 210px; text-align:left; }
+.compare-table td audio{ width:135px; max-width:100%; display:block; margin:0 auto; }
+.compare-subhead{
+  font-size: 13px;
+  color:#444;
+  margin: 8px 0 6px;
+}
+
+</style>
+</head>
+<body>
+<h1>
+  Arousal Valence Model-based Logit Steering for Emotion-Controllable Song Generation
+</h1>
+<h2>Abstract</h2>
+<div class="abstract">
+<p>
+Emotion-controllable song generation aims to produce songs that align with given lyrics and a target emotion. Existing approaches often rely on discrete emotion labels or prompt engineering, which can result in unstable and imprecise emotional control. To address these limitations, we propose ECSG, an emotion-controllable song generation framework based on the Arousal-Valence model, which enables stable and fine-grained emotion modulation without retraining the base generator. ECSG introduces an Arousal-Valence-Guided logit steering module that adjusts the primitive logits produced by a pre-trained SongLM at inference time. At each generation step, an emotion scorer predicts the arousal–valence coordinates of top-K candidate token sequences, and their Euclidean distance from the target emotion is converted into logit adjustments that bias token sampling toward emotionally aligned candidates. Extensive objective and subjective evaluations demonstrate that ECSG significantly improves emotional controllability while preserving audio quality. 
+</p></div>
+<h2>Model Overview</h2>
+<img alt="Model architecture of ECSG" src="images/model.png"/>
+<div class="table-wrap">
+</div>
+<h3>(0.8, 0.8)</h3>
+<div class="table-wrap">
+<div class="av-note">High arousal & high valence — excited, joyful, and celebratory.</div><table class="results-table">
+
+
+<thead><tr><th>Lyrics</th><th>Reference Audio</th><th>Text Description</th><th>ECSG</th><th>LeVo</th><th>SongGen</th><th>Suno</th><th>SongBloom</th><th>Yue</th></tr></thead><tbody><tr><td class="mono">Light breaks open in the sky,Every step feels amplified,I can feel the moment rise,Heartbeats racing, voices high , Nothing holds me to the ground,I'm alive inside this sound,Every breath is shining bright,This is now, this is my time</td><td><audio controls="True"><source src="ref_audio/8_8.mp3"/></audio></td><td class="mono">Highly energetic and joyful, conveying strong excitement, enthusiasm</td><td><audio controls="True"><source src="audios/ECSG(emo)/8_8.mp3"/></audio></td><td><audio controls="True"><source src="audios/levo(emo)/8_8.mp3"/></audio></td><td><audio controls="True"><source src="audios/songgen/8_8.wav"/></audio></td><td><audio controls="True"><source src="audios/suno/8_8.mp3"/></audio></td><td><audio controls="True"><source src="audios/songbloom/8_8.mp3"/></audio></td><td><audio controls="True"><source src="audios/yue/8_8.wav"/></audio></td></tr></tbody></table>
+</div>
+<h3>(0.8, 0.5)</h3>
+<div class="table-wrap">
+<div class="av-note">High arousal & mid valence — energetic, upbeat, and driving.</div><table class="results-table">
+
+
+<thead><tr><th>Lyrics</th><th>Reference Audio</th><th>Text Description</th><th>ECSG</th><th>LeVo</th><th>SongGen</th><th>Suno</th><th>SongBloom</th><th>Yue</th></tr></thead><tbody><tr><td class="mono">Moving forward, never still,Chasing what I haven't felt,Every second pulls me on,Like a rhythm pushing strong , No looking back, I find my way,Feet in motion, night to day,Step by step I carry through,Everything feels fresh and new</td><td><audio controls="True"><source src="ref_audio/8_5.mp3"/></audio></td><td class="mono">Energetic and upbeat, conveying liveliness, motion, and a sense of forward momentum.</td><td><audio controls="True"><source src="audios/ECSG(emo)/8_5.mp3"/></audio></td><td><audio controls="True"><source src="audios/levo(emo)/8_5.mp3"/></audio></td><td><audio controls="True"><source src="audios/songgen/8_5.wav"/></audio></td><td><audio controls="True"><source src="audios/suno/8_5.mp3"/></audio></td><td><audio controls="True"><source src="audios/songbloom/8_5.mp3"/></audio></td><td><audio controls="True"><source src="audios/yue/8_5.wav"/></audio></td></tr></tbody></table>
+</div>
+<h3>(0.8, 0.2)</h3>
+<div class="table-wrap">
+<div class="av-note">High arousal & low valence — tense, aggressive, and angry.</div><table class="results-table">
+
+
+<thead><tr><th>Lyrics</th><th>Reference Audio</th><th>Text Description</th><th>ECSG</th><th>LeVo</th><th>SongGen</th><th>Suno</th><th>SongBloom</th><th>Yue</th></tr></thead><tbody><tr><td class="mono">Pressure building in my chest,Every breath becomes a test,Words I swallow, teeth held tight,Fighting echoes in my mind , I feel heat beneath my skin,Holding storms I keep within,No release, no turning back,Every moment feels attacked</td><td><audio controls="True"><source src="ref_audio/8_2.mp3"/></audio></td><td class="mono">Intense and emotionally tense, conveying urgency, agitation, and restrained anger</td><td><audio controls="True"><source src="audios/ECSG(emo)/8_2.mp3"/></audio></td><td><audio controls="True"><source src="audios/levo(emo)/8_2.mp3"/></audio></td><td><audio controls="True"><source src="audios/songgen/8_2.wav"/></audio></td><td><audio controls="True"><source src="audios/suno/8_5.mp3"/></audio></td><td><audio controls="True"><source src="audios/songbloom/8_2.mp3"/></audio></td><td><audio controls="True"><source src="audios/yue/8_2.wav"/></audio></td></tr></tbody></table>
+</div>
+<h3>(0.5, 0.8)</h3>
+<div class="table-wrap">
+<div class="av-note">Mid arousal & high valence — pleasant, warm, and happy.</div><table class="results-table">
+
+
+<thead><tr><th>Lyrics</th><th>Reference Audio</th><th>Text Description</th><th>ECSG</th><th>LeVo</th><th>SongGen</th><th>Suno</th><th>SongBloom</th><th>Yue</th></tr></thead><tbody><tr><td class="mono">Soft light rests upon my face,Time slows down, a gentle pace,Every worry fades away,Nothing more I need to say , Smiles come without a sound,Simple joys are all around,In this moment, warm and clear,Everything feels close and near</td><td><audio controls="True"><source src="ref_audio/5_8.mp3"/></audio></td><td class="mono">Pleasant and happy, conveying warmth, positivity, and smooth emotional expression</td><td><audio controls="True"><source src="audios/ECSG(emo)/5_8.mp3"/></audio></td><td><audio controls="True"><source src="audios/levo(emo)/5_8.mp3"/></audio></td><td><audio controls="True"><source src="audios/songgen/5_8.wav"/></audio></td><td><audio controls="True"><source src="audios/suno/5_8.mp3"/></audio></td><td><audio controls="True"><source src="audios/songbloom/5_8.mp3"/></audio></td><td><audio controls="True"><source src="audios/yue/5_8.wav"/></audio></td></tr></tbody></table>
+</div>
+<h3>(0.5, 0.5)</h3>
+<div class="table-wrap">
+<div class="av-note">Mid arousal & mid valence — balanced, steady, and neutral-positive.</div><table class="results-table">
+
+
+<thead><tr><th>Lyrics</th><th>Reference Audio</th><th>Text Description</th><th>ECSG</th><th>LeVo</th><th>SongGen</th><th>Suno</th><th>SongBloom</th><th>Yue</th></tr></thead><tbody><tr><td class="mono">Days unfold in quiet lines,Moments pass without a sign,Nothing pulls me up or down,Just the world, just being around , I move forward, calm and slow,Letting thoughts just come and go,No extremes to color through,Only now, only true</td><td><audio controls="True"><source src="ref_audio/5_5.mp3"/></audio></td><td class="mono">Emotionally balanced and stable, without strong excitement or sadness</td><td><audio controls="True"><source src="audios/ECSG(emo)/5_5.mp3"/></audio></td><td><audio controls="True"><source src="audios/levo(emo)/5_5.mp3"/></audio></td><td><audio controls="True"><source src="audios/songgen/5_5.wav"/></audio></td><td><audio controls="True"><source src="audios/suno/5_5.mp3"/></audio></td><td><audio controls="True"><source src="audios/songbloom/5_5.mp3"/></audio></td><td><audio controls="True"><source src="audios/yue/5_5.wav"/></audio></td></tr></tbody></table>
+</div>
+<h3>(0.5, 0.2)</h3>
+<div class="table-wrap">
+<div class="av-note">Mid arousal & low valence — sad, heavy, and downbeat.</div><table class="results-table">
+
+
+<thead><tr><th>Lyrics</th><th>Reference Audio</th><th>Text Description</th><th>ECSG</th><th>LeVo</th><th>SongGen</th><th>Suno</th><th>SongBloom</th><th>Yue</th></tr></thead><tbody><tr><td class="mono">Shadows stretch across the floor,I feel tired, wanting more,Every step feels hard to take,Every smile begins to break , Words fall softly, heavy sound,Hope feels lost but still around,I keep moving through the gray,Waiting for a lighter day</td><td><audio controls="True"><source src="ref_audio/5_2.mp3"/></audio></td><td class="mono">Sad and downbeat, conveying emotional heaviness with moderate intensity</td><td><audio controls="True"><source src="audios/ECSG(emo)/5_2.mp3"/></audio></td><td><audio controls="True"><source src="audios/levo(emo)/5_2.mp3"/></audio></td><td><audio controls="True"><source src="audios/songgen/5_2.wav"/></audio></td><td><audio controls="True"><source src="audios/suno/5_2.mp3"/></audio></td><td><audio controls="True"><source src="audios/songbloom/5_2.mp3"/></audio></td><td><audio controls="True"><source src="audios/yue/5_2.wav"/></audio></td></tr></tbody></table>
+</div>
+<h3>(0.2, 0.8)</h3>
+<div class="table-wrap">
+<div class="av-note">Low arousal & high valence — relaxed, content, and soothing.</div><table class="results-table">
+
+
+<thead><tr><th>Lyrics</th><th>Reference Audio</th><th>Text Description</th><th>ECSG</th><th>LeVo</th><th>SongGen</th><th>Suno</th><th>SongBloom</th><th>Yue</th></tr></thead><tbody><tr><td class="mono">Gentle air and open space,Time drifts by at its own pace,Nothing rushes, nothing calls,I let go of rise and fall , Breathing in, I start to see,Everything just lets me be,In this calm I softly stay,Letting all the noise fade away</td><td><audio controls="True"><source src="ref_audio/2_8.mp3"/></audio></td><td class="mono">Relaxed and content, conveying calm positivity and gentle emotional expression</td><td><audio controls="True"><source src="audios/ECSG(emo)/2_8.mp3"/></audio></td><td><audio controls="True"><source src="audios/levo(emo)/2_8.mp3"/></audio></td><td><audio controls="True"><source src="audios/songgen/2_8.wav"/></audio></td><td><audio controls="True"><source src="audios/suno/2_8.mp3"/></audio></td><td><audio controls="True"><source src="audios/songbloom/2_8.mp3"/></audio></td><td><audio controls="True"><source src="audios/yue/2_8.wav"/></audio></td></tr></tbody></table>
+</div>
+<h3>(0.2, 0.5)</h3>
+<div class="table-wrap">
+<div class="av-note">Low arousal & mid valence — calm, quiet, and even.</div><table class="results-table">
+
+
+<thead><tr><th>Lyrics</th><th>Reference Audio</th><th>Text Description</th><th>ECSG</th><th>LeVo</th><th>SongGen</th><th>Suno</th><th>SongBloom</th><th>Yue</th></tr></thead><tbody><tr><td class="mono">Stillness settles in my mind,Thoughts move slowly, undefined,No strong feeling pulls me through,Nothing urgent left to do , I remain in quiet tone,Comfortable with being alone,Moments pass without a sound,Peace is all that I have found</td><td><audio controls="True"><source src="ref_audio/2_5.mp3"/></audio></td><td class="mono">Calm and emotionally steady, with minimal emotional fluctuation</td><td><audio controls="True"><source src="audios/ECSG(emo)/2_5.mp3"/></audio></td><td><audio controls="True"><source src="audios/levo(emo)/2_5.mp3"/></audio></td><td><audio controls="True"><source src="audios/songgen/2_5.wav"/></audio></td><td><audio controls="True"><source src="audios/suno/2_5.mp3"/></audio></td><td><audio controls="True"><source src="audios/songbloom/2_5.mp3"/></audio></td><td><audio controls="True"><source src="audios/yue/2_5.wav"/></audio></td></tr></tbody></table>
+</div>
+<h3>(0.2, 0.2)</h3>
+<div class="table-wrap">
+<div class="av-note">Low arousal & low valence — melancholic, withdrawn, and depressed.</div><table class="results-table">
+
+
+<thead><tr><th>Lyrics</th><th>Reference Audio</th><th>Text Description</th><th>ECSG</th><th>LeVo</th><th>SongGen</th><th>Suno</th><th>SongBloom</th><th>Yue</th></tr></thead><tbody><tr><td class="mono">Morning comes but feels the same,Every day without a name,I move slowly, feeling small,Like I'm fading from it all , Silence weighs upon my chest,Even rest won't let me rest,I stay here, withdrawn and low,Letting time just pass me slow</td><td><audio controls="True"><source src="ref_audio/2_2.mp3"/></audio></td><td class="mono">Depressed and melancholic, conveying low energy and emotional withdrawal</td><td><audio controls="True"><source src="audios/ECSG(emo)/2_2.mp3"/></audio></td><td><audio controls="True"><source src="audios/levo(emo)/2_2.mp3"/></audio></td><td><audio controls="True"><source src="audios/songgen/2_2.wav"/></audio></td><td><audio controls="True"><source src="audios/suno/2_2.mp3"/></audio></td><td><audio controls="True"><source src="audios/songbloom/2_2.mp3"/></audio></td><td><audio controls="True"><source src="audios/yue/2_2.wav"/></audio></td></tr></tbody></table>
+</div>
+
+<h2>Comparison With Pure Vocal/Music-Level Generation Models</h2>
+<p class="compare-subhead">
+  Each row corresponds to a coarse affect dimension (high/low arousal and high/low valence). Audio entries are grouped by vocal- and bgm-level generation baselines.
+</p>
+<div class="compare-wrap">
+  <table class="compare-table">
+    <thead>
+      <tr>
+        <th rowspan="2">Emotion</th>
+        <th colspan="2">vocal</th>
+        <th colspan="2">bgm</th>
+      </tr>
+      <tr>
+        <th>ECSG (vocal)</th>
+        <th>StyleSinger</th>
+        <th>ECSG (bgm)</th>
+        <th>MusER</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>(0.8,0.8)</strong></td>
+        <td><audio controls="True"><source src="audios/ECSG(vocal)/8_8_vocals.mp3"/></audio></td>
+        <td><audio controls="True"><source src="audios/stylesinger/8_8.mp3"/></audio></td>
+        <td><audio controls="True"><source src="audios/ECSG(bgm)/8_8_bgm.mp3"/></audio></td>
+        <td><audio controls="True"><source src="audios/muser/8_8.mp3"/></audio></td>
+      </tr>
+      <tr>
+        <td><strong>(0.2,0.8)</strong></td>
+        <td><audio controls="True"><source src="audios/ECSG(vocal)/2_8_vocals.mp3"/></audio></td>
+        <td><audio controls="True"><source src="audios/stylesinger/2_8.mp3"/></audio></td>
+        <td><audio controls="True"><source src="audios/ECSG(bgm)/2_8_bgm.mp3"/></audio></td>
+        <td><audio controls="True"><source src="audios/muser/2_8.mp3"/></audio></td>
+      </tr>
+      <tr>
+        <td><strong>(0.8,0.2)</strong></td>
+        <td><audio controls="True"><source src="audios/ECSG(vocal)/8_2_vocals.mp3"/></audio></td>
+        <td><audio controls="True"><source src="audios/stylesinger/8_2.mp3"/></audio></td>
+        <td><audio controls="True"><source src="audios/ECSG(bgm)/8_2_bgm.mp3"/></audio></td>
+        <td><audio controls="True"><source src="audios/muser/8_2.mp3"/></audio></td>
+      </tr>
+      <tr>
+        <td><strong>(0.2,0.2)</strong></td>
+        <td><audio controls="True"><source src="audios/ECSG(vocal)/2_2_vocals.mp3"/></audio></td>
+        <td><audio controls="True"><source src="audios/stylesinger/2_2.mp3"/></audio></td>
+        <td><audio controls="True"><source src="audios/ECSG(bgm)/2_2_bgm.mp3"/></audio></td>
+        <td><audio controls="True"><source src="audios/muser/2_2.mp3"/></audio></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+
+<script>
+// Function to toggle foldable content
+function toggleContent(element) {
+  const content = element.previousElementSibling;
+  content.classList.toggle('expanded');
+  
+  if (content.classList.contains('expanded')) {
+    element.textContent = 'Show less';
+  } else {
+    element.textContent = 'Show more';
+  }
+}
+
+// Add toggle buttons to all mono cells containing long text
+document.addEventListener('DOMContentLoaded', function() {
+  const monoCells = document.querySelectorAll('.mono');
+  
+  monoCells.forEach(cell => {
+    const textContent = cell.textContent;
+    if (textContent.length > 100) {
+      // Wrap the content in a foldable div
+      const foldableDiv = document.createElement('div');
+      foldableDiv.className = 'foldable-content';
+      foldableDiv.innerHTML = cell.innerHTML;
+      
+      // Create toggle button
+      const toggleBtn = document.createElement('button');
+      toggleBtn.className = 'toggle-btn';
+      toggleBtn.textContent = 'Show more';
+      toggleBtn.onclick = function() {
+        toggleContent(this);
+      };
+      
+      // Clear current content and add new structure
+      cell.innerHTML = '';
+      cell.appendChild(foldableDiv);
+      cell.appendChild(toggleBtn);
+    }
+  });
+});
+</script>
+</body>
+</html>
